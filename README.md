@@ -17,11 +17,14 @@ Built with **Next.js 14**, **React**, **TypeScript**, **Tailwind CSS**, **Prisma
 ### Product detail
 ![Product detail page](docs/screenshots/product-detail.png)
 
-### Cart
-![Cart page](docs/screenshots/cart.png)
+### Add to cart
+![Product page after adding to cart](docs/screenshots/add-to-cart.png)
 
-### Checkout
-![Checkout page](docs/screenshots/checkout.png)
+### Cart
+![Shopping cart with product](docs/screenshots/cart.png)
+
+### Checkout — address & payment
+![Checkout with shipping address and payment](docs/screenshots/checkout-full.png)
 
 ### Wishlist
 ![Wishlist page](docs/screenshots/wishlist.png)

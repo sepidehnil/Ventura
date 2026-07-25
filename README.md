@@ -14,48 +14,6 @@ Built with **Next.js 14**, **React**, **TypeScript**, **Tailwind CSS**, **Prisma
 - Guest cart, wishlist, and orders stored in the database
 - Contact form with message persistence
 
-## Screenshots
-
-### Home
-
-![Home page](docs/screenshots/home.png)
-
-### Shop
-
-![Products catalog](docs/screenshots/products.png)
-
-### Product detail
-
-![Product detail page](docs/screenshots/product-detail.png)
-
-### Cart
-
-![Cart page](docs/screenshots/cart.png)
-
-### Checkout
-
-![Checkout page](docs/screenshots/checkout.png)
-
-### Wishlist
-
-![Wishlist page](docs/screenshots/wishlist.png)
-
-### About
-
-![About page](docs/screenshots/about.png)
-
-### Contact
-
-![Contact page](docs/screenshots/contact.png)
-
-### FAQ
-
-![FAQ page](docs/screenshots/faq.png)
-
-### Shipping & Returns
-
-![Shipping page](docs/screenshots/shipping.png)
-
 ## Getting Started
 
 ```bash

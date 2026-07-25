@@ -6,11 +6,43 @@ A premium camping e-commerce storefront inspired by modern outdoor retail UI.
 
 Built with **Next.js 14**, **React**, **TypeScript**, **Tailwind CSS**, **Prisma**, and **Framer Motion**.
 
+## Screenshots
+
+### Home
+![Home page](docs/screenshots/home.png)
+
+### Shop
+![Products catalog](docs/screenshots/products.png)
+
+### Product detail
+![Product detail page](docs/screenshots/product-detail.png)
+
+### Cart
+![Cart page](docs/screenshots/cart.png)
+
+### Checkout
+![Checkout page](docs/screenshots/checkout.png)
+
+### Wishlist
+![Wishlist page](docs/screenshots/wishlist.png)
+
+### About
+![About page](docs/screenshots/about.png)
+
+### Contact
+![Contact page](docs/screenshots/contact.png)
+
+### FAQ
+![FAQ page](docs/screenshots/faq.png)
+
+### Shipping
+![Shipping page](docs/screenshots/shipping.png)
+
 ## Features
 
 - Landing page with hero, categories, deals countdown, brand showcase
 - Product catalog with search and filters
-- Product detail with colorway previews, cart, and checkout
+- Product detail with colorways, cart, and checkout
 - Guest cart, wishlist, and orders stored in the database
 - Contact form with message persistence
 

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { cn } from "@/lib/utils";
 
 interface ProductColorImageProps {
   src: string;
   alt: string;
-  /** Target colorway hex — applied only to product pixels, not the studio background */
+  /** Target colorway hex — product midtones match this color exactly */
   hex: string;
   /** When false, show the original photo with no tint */
   tint?: boolean;
@@ -40,14 +40,8 @@ function rgbDistance(a: RGB, b: RGB) {
   return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
 }
 
-/** Hue-ish distance after removing shared luminance shift (keeps soft shadows as bg). */
-function chromaDistance(pixel: RGB, bg: RGB) {
-  const dL = luminance(pixel) - luminance(bg);
-  return Math.hypot(
-    pixel.r - bg.r - dL,
-    pixel.g - bg.g - dL,
-    pixel.b - bg.b - dL
-  );
+function chroma({ r, g, b }: RGB) {
+  return Math.max(r, g, b) - Math.min(r, g, b);
 }
 
 function rgbToHsl({ r, g, b }: RGB) {
@@ -90,12 +84,6 @@ function hslToRgb(h: number, s: number, l: number): RGB {
   };
 }
 
-function applyColorKeepLuma(pixel: RGB, target: RGB): RGB {
-  const { l } = rgbToHsl(pixel);
-  const { h, s } = rgbToHsl(target);
-  return hslToRgb(h, Math.min(s, 0.5), l);
-}
-
 function sampleCorners(data: Uint8ClampedArray, width: number, height: number) {
   const points = [
     [2, 2],
@@ -109,9 +97,222 @@ function sampleCorners(data: Uint8ClampedArray, width: number, height: number) {
   });
 }
 
+function isContactShadow(pixel: RGB, bg: RGB) {
+  const L = luminance(pixel);
+  const bgL = luminance(bg);
+  const c = chroma(pixel);
+  const d = rgbDistance(pixel, bg);
+  // Soft studio / floor shadows are desaturated and only a bit darker than the backdrop
+  return c < 30 && L < bgL - 1 && L > bgL * 0.52 && d < 140;
+}
+
+function buildBackgroundMask(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  bg: RGB,
+  tolerance: number
+): Uint8Array {
+  const mask = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let head = 0;
+  let tail = 0;
+
+  const enqueue = (idx: number) => {
+    mask[idx] = 1;
+    queue[tail++] = idx;
+  };
+
+  const tryEnqueueBg = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const idx = y * width + x;
+    if (mask[idx]) return;
+    const i = idx * 4;
+    const pixel = { r: data[i], g: data[i + 1], b: data[i + 2] };
+    if (rgbDistance(pixel, bg) > tolerance) return;
+    enqueue(idx);
+  };
+
+  for (let x = 0; x < width; x++) {
+    tryEnqueueBg(x, 0);
+    tryEnqueueBg(x, height - 1);
+  }
+  for (let y = 0; y < height; y++) {
+    tryEnqueueBg(0, y);
+    tryEnqueueBg(width - 1, y);
+  }
+
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % width;
+    const y = (idx / width) | 0;
+    tryEnqueueBg(x + 1, y);
+    tryEnqueueBg(x - 1, y);
+    tryEnqueueBg(x, y + 1);
+    tryEnqueueBg(x, y - 1);
+  }
+
+  // Second pass: grow into soft contact shadows connected to the backdrop
+  // so floor shadows stay neutral (not dyed with the colorway).
+  head = 0;
+  // Re-seed queue with every current background pixel
+  tail = 0;
+  for (let idx = 0; idx < mask.length; idx++) {
+    if (mask[idx]) queue[tail++] = idx;
+  }
+
+  const tryEnqueueShadow = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const idx = y * width + x;
+    if (mask[idx]) return;
+    const i = idx * 4;
+    const pixel = { r: data[i], g: data[i + 1], b: data[i + 2] };
+    if (!isContactShadow(pixel, bg)) return;
+    enqueue(idx);
+  };
+
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % width;
+    const y = (idx / width) | 0;
+    tryEnqueueShadow(x + 1, y);
+    tryEnqueueShadow(x - 1, y);
+    tryEnqueueShadow(x, y + 1);
+    tryEnqueueShadow(x, y - 1);
+  }
+
+  return mask;
+}
+
 /**
- * Recolor product pixels only. Studio backgrounds are detected via corner
- * chromakey + shadow protection. Returns null for unsafe lifestyle shots.
+ * Lifestyle / scenic shots fail the studio-corner check. For dark products
+ * (matte bottles, black gear) flood from the image center through dark
+ * low-chroma pixels and recolor only that body.
+ */
+function buildDarkProductMask(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number
+): Uint8Array | null {
+  const isDarkBody = (pixel: RGB) =>
+    chroma(pixel) < 22 && luminance(pixel) < 125;
+
+  const isSoftHighlight = (pixel: RGB) => {
+    const L = luminance(pixel);
+    return chroma(pixel) < 22 && L >= 125 && L < 175;
+  };
+
+  let centerLuma = 0;
+  let centerCount = 0;
+  const x0 = Math.floor(width * 0.35);
+  const x1 = Math.floor(width * 0.65);
+  const y0 = Math.floor(height * 0.25);
+  const y1 = Math.floor(height * 0.75);
+
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * width + x) * 4;
+      centerLuma += luminance({
+        r: data[i],
+        g: data[i + 1],
+        b: data[i + 2],
+      });
+      centerCount++;
+    }
+  }
+  if (!centerCount || centerLuma / centerCount > 100) {
+    return null;
+  }
+
+  const mask = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let head = 0;
+  let tail = 0;
+
+  const tryEnqueue = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const idx = y * width + x;
+    if (mask[idx]) return;
+    const i = idx * 4;
+    const pixel = { r: data[i], g: data[i + 1], b: data[i + 2] };
+    if (!isDarkBody(pixel)) return;
+    mask[idx] = 1;
+    queue[tail++] = idx;
+  };
+
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      tryEnqueue(x, y);
+    }
+  }
+
+  if (tail < width * height * 0.01) {
+    return null;
+  }
+
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % width;
+    const y = (idx / width) | 0;
+    tryEnqueue(x + 1, y);
+    tryEnqueue(x - 1, y);
+    tryEnqueue(x, y + 1);
+    tryEnqueue(x, y - 1);
+  }
+
+  // Grow into matte speculars that touch the body (keep rock/plant out)
+  head = 0;
+  const highlightQueue = new Int32Array(width * height);
+  let hTail = 0;
+  for (let idx = 0; idx < mask.length; idx++) {
+    if (mask[idx]) highlightQueue[hTail++] = idx;
+  }
+  const tryEnqueueHighlight = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const idx = y * width + x;
+    if (mask[idx]) return;
+    const i = idx * 4;
+    const pixel = { r: data[i], g: data[i + 1], b: data[i + 2] };
+    if (!isSoftHighlight(pixel)) return;
+    mask[idx] = 1;
+    highlightQueue[hTail++] = idx;
+  };
+  while (head < hTail) {
+    const idx = highlightQueue[head++];
+    const x = idx % width;
+    const y = (idx / width) | 0;
+    tryEnqueueHighlight(x + 1, y);
+    tryEnqueueHighlight(x - 1, y);
+    tryEnqueueHighlight(x, y + 1);
+    tryEnqueueHighlight(x, y - 1);
+  }
+
+  return mask;
+}
+
+function paintIndices(
+  d: Uint8ClampedArray,
+  indices: number[],
+  lumaSum: number,
+  target: RGB
+) {
+  const avgLuma = lumaSum / indices.length;
+  const { h, s, l: targetL } = rgbToHsl(target);
+
+  for (const i of indices) {
+    const pixel = { r: d[i], g: d[i + 1], b: d[i + 2] };
+    const delta = (luminance(pixel) - avgLuma) / 255;
+    const l = Math.max(0.04, Math.min(0.96, targetL + delta * 0.9));
+    const next = hslToRgb(h, s, l);
+    d[i] = next.r;
+    d[i + 1] = next.g;
+    d[i + 2] = next.b;
+  }
+}
+
+/**
+ * Paint the product so its average area equals the swatch hex exactly.
+ * Shading comes from the photo (relative luminance); dye comes only from `hex`.
  */
 function recolorProductPixels(source: ImageData, hex: string): ImageData | null {
   const { width, height, data } = source;
@@ -122,88 +323,103 @@ function recolorProductPixels(source: ImageData, hex: string): ImageData | null 
     b: Math.round(corners.reduce((s, c) => s + c.b, 0) / corners.length),
   };
 
-  const cornerSpread = Math.max(...corners.map((c) => rgbDistance(c, bg)));
-  if (cornerSpread > 45 || luminance(bg) < 180) {
-    return null;
-  }
-
   const target = hexToRgb(hex);
   const out = new ImageData(new Uint8ClampedArray(data), width, height);
   const d = out.data;
-  const bgLum = luminance(bg);
+  const indices: number[] = [];
+  let lumaSum = 0;
 
-  for (let i = 0; i < d.length; i += 4) {
-    const pixel = { r: d[i], g: d[i + 1], b: d[i + 2] };
-    const L = luminance(pixel);
-    const rgbDist = rgbDistance(pixel, bg);
-    const chromaDist = chromaDistance(pixel, bg);
+  const studioOk =
+    Math.max(...corners.map((c) => rgbDistance(c, bg))) <= 55 &&
+    luminance(bg) >= 170;
 
-    const isSoftShadow =
-      L < bgLum && L > bgLum * 0.45 && chromaDist < 18 && rgbDist < 90;
-    const isBackground = rgbDist < 32 || chromaDist < 12 || isSoftShadow;
+  if (studioOk) {
+    const bgMask = buildBackgroundMask(data, width, height, bg, 36);
 
-    if (isBackground) continue;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        if (bgMask[idx]) continue;
+        const i = idx * 4;
+        const pixel = { r: d[i], g: d[i + 1], b: d[i + 2] };
+        if (isContactShadow(pixel, bg)) continue;
+        if (chroma(pixel) < 18 && luminance(pixel) > 155) continue;
 
-    const next = applyColorKeepLuma(pixel, target);
-    d[i] = next.r;
-    d[i + 1] = next.g;
-    d[i + 2] = next.b;
+        indices.push(i);
+        lumaSum += Math.max(luminance(pixel), 1);
+      }
+    }
+  } else {
+    // Lifestyle shot (e.g. Thermo Trail Bottle) — recolor dark product body only
+    const productMask = buildDarkProductMask(data, width, height);
+    if (!productMask) return null;
+
+    for (let idx = 0; idx < productMask.length; idx++) {
+      if (!productMask[idx]) continue;
+      const i = idx * 4;
+      const pixel = { r: d[i], g: d[i + 1], b: d[i + 2] };
+      indices.push(i);
+      lumaSum += Math.max(luminance(pixel), 1);
+    }
   }
 
+  if (indices.length < width * height * 0.008) {
+    return null;
+  }
+
+  paintIndices(d, indices, lumaSum, target);
   return out;
 }
 
-const recolorCache = new Map<string, string | null>();
+const CACHE_VERSION = "hex-v5";
+const recolorCache = new Map<string, string>();
 
 function loadRecolored(src: string, hex: string): Promise<string | null> {
-  const key = `${src}|${hex}`;
-  if (recolorCache.has(key)) {
-    return Promise.resolve(recolorCache.get(key) ?? null);
-  }
+  const key = `${CACHE_VERSION}|${src}|${hex.toLowerCase()}`;
+  const cached = recolorCache.get(key);
+  if (cached) return Promise.resolve(cached);
 
   return new Promise((resolve) => {
     const img = new window.Image();
     img.decoding = "async";
     img.onload = () => {
       try {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (!w || !h) {
+          resolve(null);
+          return;
+        }
         const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) {
-          recolorCache.set(key, null);
           resolve(null);
           return;
         }
         ctx.drawImage(img, 0, 0);
-        const source = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const recolored = recolorProductPixels(source, hex);
+        const recolored = recolorProductPixels(
+          ctx.getImageData(0, 0, w, h),
+          hex
+        );
         if (!recolored) {
-          recolorCache.set(key, null);
           resolve(null);
           return;
         }
         ctx.putImageData(recolored, 0, 0);
-        const url = canvas.toDataURL("image/webp", 0.88);
+        const url = canvas.toDataURL("image/png");
         recolorCache.set(key, url);
         resolve(url);
       } catch {
-        recolorCache.set(key, null);
         resolve(null);
       }
     };
-    img.onerror = () => {
-      recolorCache.set(key, null);
-      resolve(null);
-    };
+    img.onerror = () => resolve(null);
     img.src = src;
   });
 }
 
-/**
- * Recolors only the product. Light studio backgrounds (and soft shadows) stay
- * unchanged. Lifestyle photos with scenic backdrops skip recoloring entirely.
- */
 export default function ProductColorImage({
   src,
   alt,
@@ -215,23 +431,25 @@ export default function ProductColorImage({
   priority,
 }: ProductColorImageProps) {
   const [displaySrc, setDisplaySrc] = useState(src);
+  const prevSrcRef = useRef(src);
+  const requestId = useRef(0);
 
   useEffect(() => {
     if (!tint) {
       setDisplaySrc(src);
+      prevSrcRef.current = src;
       return;
     }
 
-    let cancelled = false;
-    setDisplaySrc(src);
+    const srcChanged = prevSrcRef.current !== src;
+    prevSrcRef.current = src;
+    if (srcChanged) setDisplaySrc(src);
 
+    const id = ++requestId.current;
     loadRecolored(src, hex).then((url) => {
-      if (!cancelled && url) setDisplaySrc(url);
+      if (id !== requestId.current) return;
+      if (url) setDisplaySrc(url);
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [src, hex, tint]);
 
   return (

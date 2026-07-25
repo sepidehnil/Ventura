@@ -11,10 +11,44 @@ import { Mail, MapPin, Phone } from "lucide-react";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSent(true);
+    setError(null);
+    setLoading(true);
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.get("name"),
+          email: data.get("email"),
+          message: data.get("message"),
+        }),
+      });
+
+      const payload = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!res.ok) {
+        setError(payload?.error || "Could not send your message. Try again.");
+        return;
+      }
+
+      setSent(true);
+      form.reset();
+    } catch {
+      setError("Could not send your message. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,7 +124,8 @@ export default function ContactPage() {
                         id="name"
                         name="name"
                         required
-                        className="min-h-[48px] w-full rounded-xl border border-sand bg-cream px-4 text-sm focus:border-sage focus:outline-none"
+                        disabled={loading}
+                        className="min-h-[48px] w-full rounded-xl border border-sand bg-cream px-4 text-sm focus:border-sage focus:outline-none disabled:opacity-60"
                       />
                     </div>
                     <div>
@@ -105,7 +140,8 @@ export default function ContactPage() {
                         name="email"
                         type="email"
                         required
-                        className="min-h-[48px] w-full rounded-xl border border-sand bg-cream px-4 text-sm focus:border-sage focus:outline-none"
+                        disabled={loading}
+                        className="min-h-[48px] w-full rounded-xl border border-sand bg-cream px-4 text-sm focus:border-sage focus:outline-none disabled:opacity-60"
                       />
                     </div>
                   </div>
@@ -121,11 +157,17 @@ export default function ContactPage() {
                       name="message"
                       required
                       rows={5}
-                      className="w-full rounded-xl border border-sand bg-cream px-4 py-3 text-sm focus:border-sage focus:outline-none"
+                      disabled={loading}
+                      className="w-full rounded-xl border border-sand bg-cream px-4 py-3 text-sm focus:border-sage focus:outline-none disabled:opacity-60"
                     />
                   </div>
-                  <Button type="submit" className="mt-6">
-                    Send message
+                  {error && (
+                    <p className="mt-4 text-sm text-red-600" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <Button type="submit" className="mt-6" disabled={loading}>
+                    {loading ? "Sending…" : "Send message"}
                   </Button>
                 </form>
               )}

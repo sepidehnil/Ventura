@@ -13,9 +13,15 @@ function resolveDatabaseUrl(): string {
 
   const seedDb = path.join(process.cwd(), "prisma", "seed.db");
 
-  // Vercel filesystem is read-only except /tmp — copy seeded SQLite there
+  // Vercel filesystem is read-only except /tmp — copy seeded SQLite there.
+  // Include deployment id so a new deploy never reuses a stale /tmp DB
+  // (e.g. old .png image paths from a previous release).
   if (process.env.VERCEL) {
-    const tmpDb = path.join(tmpdir(), "ventura.db");
+    const deployId =
+      process.env.VERCEL_DEPLOYMENT_ID ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      "local";
+    const tmpDb = path.join(tmpdir(), `ventura-${deployId}.db`);
     if (!existsSync(tmpDb)) {
       if (!existsSync(seedDb)) {
         throw new Error(

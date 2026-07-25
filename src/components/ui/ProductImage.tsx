@@ -28,10 +28,27 @@ export default function ProductImage({
   unoptimized,
 }: ProductImageProps) {
   const [error, setError] = useState(false);
+  const [retries, setRetries] = useState(0);
 
   useEffect(() => {
     setError(false);
+    setRetries(0);
   }, [src]);
+
+  if (!src) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center bg-gradient-to-br from-sand to-accent/20",
+          fill ? "absolute inset-0" : "",
+          className
+        )}
+        style={!fill ? { width, height } : undefined}
+        role="img"
+        aria-label={alt}
+      />
+    );
+  }
 
   if (error) {
     return (
@@ -50,8 +67,13 @@ export default function ProductImage({
     );
   }
 
+  // Local public assets: skip the optimizer on first paint so images aren't
+  // blank while /_next/image is cold / still generating variants.
+  const isLocal = src.startsWith("/images/") || src.startsWith("data:");
+
   return (
     <Image
+      key={`${src}-${retries}`}
       src={src}
       alt={alt}
       fill={fill}
@@ -60,8 +82,14 @@ export default function ProductImage({
       className={className}
       sizes={sizes}
       priority={priority}
-      unoptimized={unoptimized}
-      onError={() => setError(true)}
+      unoptimized={unoptimized || isLocal}
+      onError={() => {
+        if (retries < 1) {
+          setRetries((n) => n + 1);
+          return;
+        }
+        setError(true);
+      }}
     />
   );
 }

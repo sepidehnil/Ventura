@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { categories as staticCategories } from "@/data/categories";
+import { partnerBrands } from "@/data/brands";
+import { products as staticProducts } from "@/data/products";
+import { showcaseItems } from "@/data/showcase";
 import { CategoryItem, Product, ShowcaseItem } from "@/types";
 
 interface BrandItem {
@@ -15,11 +19,12 @@ interface CatalogPayload {
   showcase: ShowcaseItem[];
 }
 
-const defaultCatalog: CatalogPayload = {
-  products: [],
-  categories: [],
-  brands: [],
-  showcase: [],
+/** Instant first paint — avoids empty sections remounting after /api/catalog */
+const staticCatalog: CatalogPayload = {
+  products: staticProducts,
+  categories: staticCategories,
+  brands: partnerBrands.map((b) => ({ name: b.name, label: b.label })),
+  showcase: showcaseItems,
 };
 
 let cache: CatalogPayload | null = null;
@@ -49,7 +54,7 @@ function loadCatalog(): Promise<CatalogPayload> {
 }
 
 export function useCatalog() {
-  const [data, setData] = useState<CatalogPayload>(cache ?? defaultCatalog);
+  const [data, setData] = useState<CatalogPayload>(cache ?? staticCatalog);
   const [loading, setLoading] = useState(!cache);
 
   useEffect(() => {
@@ -61,7 +66,6 @@ export function useCatalog() {
       return;
     }
 
-    setLoading(true);
     void loadCatalog()
       .then((json) => {
         if (!active) return;
@@ -70,6 +74,7 @@ export function useCatalog() {
       })
       .catch(() => {
         if (!active) return;
+        // Keep static catalog so images remain visible offline / on API errors
         setLoading(false);
       });
 

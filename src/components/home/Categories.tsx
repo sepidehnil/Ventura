@@ -19,7 +19,7 @@ export default function Categories() {
           </h2>
         </ScrollReveal>
 
-        <StaggerReveal className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-5">
+        <StaggerReveal className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
           {categories.map((category) => (
             <StaggerItem key={category.id}>
               <Link href={`/products?category=${category.id}`} className="group block">

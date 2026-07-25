@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface ProductImageProps {
@@ -13,6 +13,7 @@ interface ProductImageProps {
   className?: string;
   sizes?: string;
   priority?: boolean;
+  unoptimized?: boolean;
 }
 
 export default function ProductImage({
@@ -24,8 +25,13 @@ export default function ProductImage({
   className,
   sizes,
   priority,
+  unoptimized,
 }: ProductImageProps) {
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+  }, [src]);
 
   if (error) {
     return (
@@ -54,6 +60,7 @@ export default function ProductImage({
       className={className}
       sizes={sizes}
       priority={priority}
+      unoptimized={unoptimized}
       onError={() => setError(true)}
     />
   );

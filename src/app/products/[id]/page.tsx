@@ -50,31 +50,60 @@ export default function ProductDetailPage() {
   const { products, loading: catalogLoading } = useCatalog();
   const [product, setProduct] = useState<Product | null>(null);
   const [resolving, setResolving] = useState(true);
-  const { addToCart, toggleWishlist, isInWishlist } = useStore();
+  const { cart, addToCart, toggleWishlist, isInWishlist, init } = useStore();
 
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeColor, setActiveColor] = useState(0);
 
-  const routeId = (params.id as string) ?? "";
+  const routeId = decodeURIComponent(
+    Array.isArray(params.id) ? params.id[0] ?? "" : (params.id as string) ?? ""
+  );
   const { productId, colorSlug } = parseProductRouteId(routeId);
 
   useEffect(() => {
-    let active = true;
-    setResolving(true);
-    setProduct(null);
+    void init();
+  }, [init]);
 
-    const local = products.find((p) => p.id === productId);
-    if (local) {
-      setProduct(local);
-      setActiveColor(colorIndexForSlug(local, colorSlug));
+  useEffect(() => {
+    if (!productId) {
+      setProduct(null);
       setResolving(false);
       return;
     }
 
+    let active = true;
+    setResolving(true);
+
+    const fromCatalog = products.find((p) => p.id === productId);
+    const cartItem = cart.find(
+      (item) => parseProductRouteId(item.product.id).productId === productId
+    );
+    const fromCart = cartItem
+      ? {
+          ...cartItem.product,
+          id: productId,
+          name: cartItem.product.name.replace(/\s—\s.+$/, ""),
+        }
+      : null;
+
+    const local = fromCatalog ?? fromCart;
+    if (local) {
+      setProduct(local);
+      setActiveColor(
+        colorIndexForSlug(
+          local,
+          colorSlug ?? cartItem?.color?.toLowerCase()
+        )
+      );
+      setResolving(false);
+      return;
+    }
+
+    // Wait for catalog before treating as missing
     if (catalogLoading) return;
 
-    fetch(`/api/products/${productId}`)
+    fetch(`/api/products/${encodeURIComponent(productId)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;
@@ -82,7 +111,12 @@ export default function ProductDetailPage() {
           const next = data.product as Product;
           setProduct(next);
           setActiveColor(colorIndexForSlug(next, colorSlug));
+        } else {
+          setProduct(null);
         }
+      })
+      .catch(() => {
+        if (active) setProduct(null);
       })
       .finally(() => {
         if (active) setResolving(false);
@@ -91,9 +125,9 @@ export default function ProductDetailPage() {
     return () => {
       active = false;
     };
-  }, [productId, colorSlug, products, catalogLoading]);
+  }, [productId, colorSlug, products, catalogLoading, cart]);
 
-  if (resolving || catalogLoading) {
+  if (resolving || (catalogLoading && !product)) {
     return (
       <MainLayout>
         <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-4 pt-32">
@@ -150,7 +184,7 @@ export default function ProductDetailPage() {
           <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
             <ScrollReveal direction="left">
               <div className="space-y-3">
-                <div className="relative aspect-square overflow-hidden rounded-card bg-sage-soft">
+                <div className="relative aspect-square overflow-hidden rounded-card bg-[#eef2ee]">
                   <ProductColorImage
                     src={product.image}
                     alt={`${product.name} in ${selectedColor.name}`}
@@ -169,7 +203,7 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={() => setActiveColor(i)}
                       className={cn(
-                        "relative aspect-square overflow-hidden rounded-2xl bg-sage-soft ring-2 transition",
+                        "relative aspect-square overflow-hidden rounded-2xl bg-[#eef2ee] ring-2 transition",
                         activeColor === i
                           ? "ring-sage"
                           : "ring-transparent hover:ring-sand"

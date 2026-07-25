@@ -70,7 +70,7 @@ export default function DealCard() {
       </div>
 
       <Link
-        href="/products"
+        href="/products?deal=1"
         className="relative z-10 mt-8 inline-flex items-center gap-2 self-start rounded-full bg-cream px-5 py-3 text-sm font-semibold text-sage-dark transition-transform hover:scale-[1.03]"
       >
         View deals

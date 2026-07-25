@@ -67,7 +67,7 @@ export default function Hero() {
         >
           <div className="relative mx-auto aspect-[16/10] w-full max-w-3xl">
             <ProductImage
-              src="/images/hero-campsite.png"
+              src="/images/hero-campsite.webp"
               alt="Campsite with green tent, pine trees, backpacks and boots"
               fill
               className="object-contain object-center"

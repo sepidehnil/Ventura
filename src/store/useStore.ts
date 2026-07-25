@@ -133,7 +133,7 @@ export const useStore = create<StoreState>()((set, get) => ({
     })
       .then((res) => readJson<{ cart?: CartItem[] }>(res))
       .then((data) => {
-        if (data?.cart) set({ cart: data.cart });
+        if (data?.cart) set({ cart: data.cart.map(normalizeCartItem) });
       });
   },
 
@@ -148,7 +148,7 @@ export const useStore = create<StoreState>()((set, get) => ({
     })
       .then((res) => readJson<{ cart?: CartItem[] }>(res))
       .then((data) => {
-        if (data?.cart) set({ cart: data.cart });
+        if (data?.cart) set({ cart: data.cart.map(normalizeCartItem) });
       });
   },
 
@@ -173,7 +173,7 @@ export const useStore = create<StoreState>()((set, get) => ({
     })
       .then((res) => readJson<{ cart?: CartItem[] }>(res))
       .then((data) => {
-        if (data?.cart) set({ cart: data.cart });
+        if (data?.cart) set({ cart: data.cart.map(normalizeCartItem) });
       });
   },
 

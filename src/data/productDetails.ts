@@ -80,6 +80,12 @@ const byCategorySpecs: Record<Product["category"], ProductSpec[]> = {
     { label: "Load", value: "Stable for camp cooking & rest" },
     { label: "Best for", value: "Campsite comfort" },
   ],
+  drinkware: [
+    { label: "Capacity", value: "500ml–1L" },
+    { label: "Insulation", value: "Double-wall vacuum" },
+    { label: "Lid", value: "Leak-proof trail lid" },
+    { label: "Best for", value: "Hot & cold drinks on the move" },
+  ],
   accessories: [
     { label: "Material", value: "Outdoor-grade durable build" },
     { label: "Packability", value: "Lightweight & trail-ready" },
@@ -115,6 +121,12 @@ const colorwaysByCategory: Record<
     { name: "Forest", hex: "#4F6F54" },
     { name: "Navy", hex: "#3D4F5F" },
     { name: "Cream", hex: "#E8E0D0" },
+  ],
+  drinkware: [
+    { name: "Black", hex: "#1F2421", tint: false },
+    { name: "Forest", hex: "#4F6F54" },
+    { name: "Sand", hex: "#C4A574" },
+    { name: "Steel", hex: "#7A8580" },
   ],
   accessories: [
     { name: "Trail", hex: "#6F9574", tint: false },

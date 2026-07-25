@@ -7,7 +7,7 @@ export const showcaseItems: ShowcaseItem[] = [
     subtitle: "Trail Ready Packs",
     description:
       "Discover durable backpacks built for multi-day hikes, weekend getaways, and every path in between.",
-    image: "/images/products/12.png",
+    image: "/images/products/12.webp",
     cta: "View Collection",
     href: "/products?category=backpacks",
   },
@@ -17,7 +17,7 @@ export const showcaseItems: ShowcaseItem[] = [
     subtitle: "Sleep Under the Stars",
     description:
       "Tents, sleeping bags, and camp furniture designed for comfort when the trail ends.",
-    image: "/images/products/2.png",
+    image: "/images/products/2.webp",
     cta: "Shop Tents",
     href: "/products?category=tents",
   },

@@ -19,7 +19,7 @@ export const products: Product[] = [
     category: "backpacks",
     price: 189,
     originalPrice: 229,
-    image: "/images/products/1.png",
+    image: "/images/products/1.webp",
     description:
       "Rugged 45L hiking backpack with ventilated back panel, rain cover, and multiple attachment points for overnight adventures.",
     rating: 4.8,
@@ -33,7 +33,7 @@ export const products: Product[] = [
     category: "tents",
     price: 249,
     originalPrice: 299,
-    image: "/images/products/2.png",
+    image: "/images/products/2.webp",
     description:
       "Lightweight double-wall dome tent for two. Easy pitch, waterproof flysheet, and excellent ventilation for 3-season camping.",
     rating: 4.7,
@@ -47,7 +47,7 @@ export const products: Product[] = [
     brand: "Glaree",
     category: "lighting",
     price: 42,
-    image: "/images/products/3.png",
+    image: "/images/products/3.webp",
     description:
       "Bright rechargeable headlamp with multiple modes, red night vision, and IPX6 water resistance for night trails.",
     rating: 4.6,
@@ -61,7 +61,7 @@ export const products: Product[] = [
     category: "furniture",
     price: 68,
     originalPrice: 85,
-    image: "/images/products/4.png",
+    image: "/images/products/4.webp",
     description:
       "Compact folding camp chair with cup holder and carry bag. Stable aluminum frame for fireside comfort.",
     rating: 4.5,
@@ -72,9 +72,9 @@ export const products: Product[] = [
     id: "5",
     name: "Thermo Trail Bottle 1L",
     brand: "Kovea",
-    category: "accessories",
+    category: "drinkware",
     price: 36,
-    image: "/images/products/5.png",
+    image: "/images/products/5.webp",
     description:
       "Insulated stainless steel bottle that keeps drinks hot or cold for hours. Leak-proof lid for backpack packing.",
     rating: 4.9,
@@ -88,7 +88,7 @@ export const products: Product[] = [
     category: "accessories",
     price: 129,
     originalPrice: 159,
-    image: "/images/products/6.png",
+    image: "/images/products/6.webp",
     description:
       "Comfort-rated mummy sleeping bag for cool nights. Compressible stuff sack included for easy packing.",
     rating: 4.7,
@@ -101,7 +101,7 @@ export const products: Product[] = [
     brand: "Cordura",
     category: "backpacks",
     price: 145,
-    image: "/images/products/7.png",
+    image: "/images/products/7.webp",
     description:
       "Daypack built with Cordura fabric for durability. Hydration-ready and ideal for day hikes and city escapes.",
     rating: 4.6,
@@ -114,7 +114,7 @@ export const products: Product[] = [
     brand: "MSR",
     category: "tents",
     price: 319,
-    image: "/images/products/8.png",
+    image: "/images/products/8.webp",
     description:
       "Ultralight solo tent for fastpacking. Freestanding design with minimal pack weight and storm-ready poles.",
     rating: 4.8,
@@ -127,7 +127,7 @@ export const products: Product[] = [
     category: "lighting",
     price: 54,
     originalPrice: 69,
-    image: "/images/products/9.png",
+    image: "/images/products/9.webp",
     description:
       "Portable camping lantern with warm LED glow, dimmer control, and USB charging for basecamp evenings.",
     rating: 4.5,
@@ -139,7 +139,7 @@ export const products: Product[] = [
     brand: "Pezan",
     category: "furniture",
     price: 79,
-    image: "/images/products/10.png",
+    image: "/images/products/10.webp",
     description:
       "Fold-flat camping table with aluminum legs. Perfect for cooking setups and outdoor dining.",
     rating: 4.4,
@@ -151,7 +151,7 @@ export const products: Product[] = [
     brand: "Jack Wolfskin",
     category: "accessories",
     price: 28,
-    image: "/images/products/11.png",
+    image: "/images/products/11.webp",
     description:
       "Waterproof backpack rain cover with reflective accents. Fits packs from 30L to 50L.",
     rating: 4.3,
@@ -164,7 +164,7 @@ export const products: Product[] = [
     category: "backpacks",
     price: 165,
     originalPrice: 195,
-    image: "/images/products/12.png",
+    image: "/images/products/12.webp",
     description:
       "Rugged expedition duffel with backpack straps. Water-resistant shell for basecamp and travel.",
     rating: 4.7,

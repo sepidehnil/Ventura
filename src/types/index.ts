@@ -8,7 +8,13 @@ export type Brand =
   | "MSR"
   | "Naturehike";
 
-export type Category = "backpacks" | "tents" | "lighting" | "furniture" | "accessories";
+export type Category =
+  | "backpacks"
+  | "tents"
+  | "lighting"
+  | "furniture"
+  | "drinkware"
+  | "accessories";
 
 export interface Product {
   id: string;

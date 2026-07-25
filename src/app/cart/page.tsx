@@ -72,9 +72,10 @@ export default function CartPage() {
               <AnimatePresence>
                 {cart.map((item) => {
                   const { productId } = parseProductRouteId(item.product.id);
+                  const href = `/products/${encodeURIComponent(productId)}`;
                   return (
                   <motion.div
-                    key={`${item.product.id}-${item.color ?? ""}`}
+                    key={`${productId}-${item.color ?? ""}`}
                     layout
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -82,7 +83,7 @@ export default function CartPage() {
                     className="flex gap-4 rounded-card border border-sand bg-white p-4 shadow-card md:gap-6 md:p-6"
                   >
                     <Link
-                      href={`/products/${productId}`}
+                      href={href}
                       className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-sage-soft md:h-32 md:w-28"
                     >
                       <ProductImage
@@ -90,6 +91,7 @@ export default function CartPage() {
                         alt={item.product.name}
                         fill
                         className="object-cover"
+                        sizes="112px"
                       />
                     </Link>
                     <div className="flex flex-1 flex-col">
@@ -99,7 +101,7 @@ export default function CartPage() {
                             {item.product.brand}
                           </p>
                           <Link
-                            href={`/products/${productId}`}
+                            href={href}
                             className="text-lg font-semibold text-charcoal transition-colors hover:text-sage-dark"
                           >
                             {item.product.name}
@@ -110,7 +112,7 @@ export default function CartPage() {
                           type="button"
                           whileTap={tapScale}
                           onClick={() =>
-                            removeFromCart(item.product.id, item.color)
+                            removeFromCart(productId, item.color)
                           }
                           className="text-stone transition-colors hover:text-charcoal"
                           aria-label="Remove item"
@@ -124,7 +126,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() =>
                               updateQuantity(
-                                item.product.id,
+                                productId,
                                 item.quantity - 1,
                                 item.color
                               )
@@ -141,7 +143,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() =>
                               updateQuantity(
-                                item.product.id,
+                                productId,
                                 item.quantity + 1,
                                 item.color
                               )

@@ -168,12 +168,25 @@ function SortMenu({
   onChange: (next: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const current =
     SORT_OPTIONS.find((opt) => opt.id === value) ?? SORT_OPTIONS[0];
 
+  const updateMenuPos = useCallback(() => {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
+  }, []);
+
   useEffect(() => {
     if (!open) return;
+    updateMenuPos();
     const onPointerDown = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
@@ -182,19 +195,28 @@ function SortMenu({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
+    const onReposition = () => updateMenuPos();
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
     };
-  }, [open]);
+  }, [open, updateMenuPos]);
 
   return (
     <div ref={rootRef} className="relative z-30 shrink-0">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          if (!open) updateMenuPos();
+          setOpen((prev) => !prev);
+        }}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Sort products"
@@ -214,7 +236,8 @@ function SortMenu({
         <ul
           role="listbox"
           aria-label="Sort options"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[13.5rem] overflow-hidden rounded-2xl border border-sand bg-white py-1.5 shadow-lift"
+          style={{ top: menuPos.top, right: menuPos.right }}
+          className="fixed z-[80] min-w-[13.5rem] overflow-hidden rounded-2xl border border-sand bg-white py-1.5 shadow-lift"
         >
           {SORT_OPTIONS.map((opt) => {
             const active = opt.id === current.id;

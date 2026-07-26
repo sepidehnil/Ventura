@@ -12,7 +12,10 @@ Built with **Next.js 14**, **React**, **TypeScript**, **Tailwind CSS**, **Prisma
 ![Home page](docs/screenshots/home.png)
 
 ### Shop
-![Products catalog](docs/screenshots/products.png)
+![Products catalog](docs/screenshots/products-full.png)
+
+### Shop filters & sort
+![Shop filters sidebar and sort menu](docs/screenshots/shop-filters.png)
 
 ### Product detail
 ![Product detail page](docs/screenshots/product-detail.png)
